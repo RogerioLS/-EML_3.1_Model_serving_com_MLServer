@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '00 12 */15 * *'
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install Python and pip
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip
+
+    - name: Install dependencies
+      run: |
+        python3 -m pip install numpy requests joblib scikit-learn
+
+    - name: Install Docker Engine
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt-get update
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+
+    - name: Install Make
+      run: sudo apt-get install -y make
+
+    - name: Build Docker Image
+      run: make build
+
+    - name: Run Docker Container
+      run: make run
+
+    - name: Wait for Container to be Ready
+      run: |
+        for i in {1..5}; do
+          curl -f http://localhost:5000/ && break || sleep 10;
+        done
+
+    - name: Check port accessibility
+      run: |
+        sudo netstat -tuln | grep 5000
+
+    - name: Execute Tests
+      run: make test
+
+    - name: Cleanup Docker Containers
+      if: always()
+      run: make clean

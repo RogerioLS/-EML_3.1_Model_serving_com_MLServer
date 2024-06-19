@@ -1,0 +1,9 @@
+{
+    "name": "iris_model",
+    "implementation": "mlserver_sklearn.SKLearnModel",
+    "parameters":
+    {
+        "uri": "./iris_model.pkl",
+        "version": "1.0"
+    }
+}
